@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commodity Futures Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📈 Commodity Futures Simulator</h1>
+            <p class="subtitle">Monte Carlo Hedging Analysis for Farmers & Exporters</p>
+        </header>
+
+        <div class="main-content">
+            <div class="input-panel">
+                <h2>Simulation Parameters</h2>
+
+                <div class="form-group">
+                    <label for="commodity">Commodity</label>
+                    <select id="commodity">
+                        <option value="">Loading...</option>
+                    </select>
+                    <div class="info-text" id="commodity-info"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="volume">Volume</label>
+                    <input type="number" id="volume" value="10000" min="100" step="100">
+                    <div class="info-text">Units to hedge</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="spot_price">Spot Price ($)</label>
+                    <input type="number" id="spot_price" value="0" min="0" step="0.01">
+                    <div class="info-text">Enter 0 to use current market price</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="time_horizon">Time Horizon (Months)</label>
+                    <input type="number" id="time_horizon" value="6" min="1" max="24">
+                </div>
+
+                <div class="form-group">
+                    <label for="strategy">Hedging Strategy</label>
+                    <select id="strategy">
+                        <option value="no_hedge">No Hedge (Full Exposure)</option>
+                        <option value="full_hedge" selected>Full Hedge (100%)</option>
+                        <option value="partial_hedge">Partial Hedge (50%)</option>
+                        <option value="dynamic_hedge">Dynamic Hedge (Adaptive)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="simulations">Simulations</label>
+                    <input type="number" id="simulations" value="10000" min="1000" max="50000" step="1000">
+                </div>
+
+                <button id="run-simulation" class="btn-primary">Run Simulation</button>
+                <div id="loading" class="loading" style="display: none;">
+                    Running Monte Carlo simulation...
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div id="results-placeholder" class="placeholder">
+                    <h3>👈 Configure parameters and click "Run Simulation"</h3>
+                    <p>The Monte Carlo engine will generate thousands of price scenarios and calculate optimal hedging strategies.</p>
+                </div>
+
+                <div id="results" style="display: none;">
+                    <h2>Simulation Results</h2>
+
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Expected Revenue</div>
+                            <div class="metric-value" id="metric-mean">$0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Std Deviation</div>
+                            <div class="metric-value" id="metric-std">$0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Value at Risk (95%)</div>
+                            <div class="metric-value" id="metric-var">$0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Expected Shortfall</div>
+                            <div class="metric-value" id="metric-es">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Revenue Distribution</h3>
+                        <div id="revenue-chart"></div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Price Scenarios</h3>
+                        <div id="price-chart"></div>
+                    </div>
+
+                    <div class="metrics-detail">
+                        <h3>Risk Metrics</h3>
+                        <table>
+                            <tr>
+                                <td>Best Case</td>
+                                <td id="metric-max">$0</td>
+                            </tr>
+                            <tr>
+                                <td>Worst Case</td>
+                                <td id="metric-min">$0</td>
+                            </tr>
+                            <tr>
+                                <td>Median</td>
+                                <td id="metric-median">$0</td>
+                            </tr>
+                            <tr>
+                                <td>95th Percentile</td>
+                                <td id="metric-p95">$0</td>
+                            </tr>
+                            <tr>
+                                <td>5th Percentile</td>
+                                <td id="metric-p5">$0</td>
+                            </tr>
+                            <tr>
+                                <td>Max Drawdown</td>
+                                <td id="metric-dd">0%</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load commodities on page load
+        async function loadCommodities() {
+            const response = await fetch('/api/commodities');
+            const commodities = await response.json();
+
+            const select = document.getElementById('commodity');
+            select.innerHTML = commodities.map(c => 
+                `<option value="${c.code}">${c.name} - $${c.price} /${c.unit} (Vol: ${c.volatility}%)</option>`
+            ).join('');
+
+            updateCommodityInfo();
+        }
+
+        function updateCommodityInfo() {
+            const select = document.getElementById('commodity');
+            const option = select.options[select.selectedIndex];
+            const text = option.text;
+            document.getElementById('commodity-info').textContent = text.split(' - ')[1] || '';
+        }
+
+        document.getElementById('commodity').addEventListener('change', updateCommodityInfo);
+
+        // Run simulation
+        document.getElementById('run-simulation').addEventListener('click', async () => {
+            const data = {
+                commodity: document.getElementById('commodity').value,
+                volume: parseFloat(document.getElementById('volume').value),
+                spot_price: parseFloat(document.getElementById('spot_price').value),
+                time_horizon: parseInt(document.getElementById('time_horizon').value),
+                strategy: document.getElementById('strategy').value,
+                simulations: parseInt(document.getElementById('simulations').value)
+            };
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results-placeholder').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const results = await response.json();
+                displayResults(results);
+            } catch (error) {
+                alert('Simulation error: ' + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+
+        function displayResults(results) {
+            document.getElementById('results').style.display = 'block';
+
+            const m = results.metrics;
+            document.getElementById('metric-mean').textContent = '$' + m.mean.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-std').textContent = '$' + m.std.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-var').textContent = '$' + m.var_95.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-es').textContent = '$' + m.es_95.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-max').textContent = '$' + m.max.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-min').textContent = '$' + m.min.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-median').textContent = '$' + m.percentile_50.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-p95').textContent = '$' + m.percentile_95.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-p5').textContent = '$' + m.percentile_5.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('metric-dd').textContent = m.max_drawdown.toFixed(2) + '%';
+
+            // Revenue distribution chart
+            const revenueTrace = {
+                x: results.histogram.bins.slice(0, -1).map((b, i) => (b + results.histogram.bins[i + 1]) / 2),
+                y: results.histogram.counts,
+                type: 'bar',
+                name: 'Frequency',
+                marker: { color: '#3b82f6' }
+            };
+
+            const revenueLayout = {
+                xaxis: { title: 'Revenue ($)' },
+                yaxis: { title: 'Frequency' },
+                showlegend: false,
+                margin: { t: 20, b: 40, l: 60, r: 20 }
+            };
+
+            Plotly.newPlot('revenue-chart', [revenueTrace], revenueLayout, {responsive: true});
+
+            // Price distribution chart
+            const priceTrace = {
+                x: results.price_distribution.bins.slice(0, -1).map((b, i) => (b + results.price_distribution.bins[i + 1]) / 2),
+                y: results.price_distribution.counts,
+                type: 'bar',
+                name: 'Frequency',
+                marker: { color: '#10b981' }
+            };
+
+            const priceLayout = {
+                xaxis: { title: 'Final Price ($)' },
+                yaxis: { title: 'Frequency' },
+                showlegend: false,
+                margin: { t: 20, b: 40, l: 60, r: 20 }
+            };
+
+            Plotly.newPlot('price-chart', [priceTrace], priceLayout, {responsive: true});
+        }
+
+        // Initialize
+        loadCommodities();
+    </script>
+</body>
+</html>
