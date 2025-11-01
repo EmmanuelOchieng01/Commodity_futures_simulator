@@ -1,4 +1,4 @@
-# 📈 Commodity Futures Simulator
+#  Commodity Futures Simulator
 
 A powerful Monte Carlo-based hedging simulator for farmers and exporters to optimize their commodity risk management strategies.
 
@@ -6,7 +6,7 @@ A powerful Monte Carlo-based hedging simulator for farmers and exporters to opti
 ![Flask](https://img.shields.io/badge/flask-2.0+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-## 🎯 Features
+##  Features
 
 - **Real Historical Data**: Uses actual commodity prices (2010-2024)
 - **Monte Carlo Simulation**: 10,000+ scenario simulations for risk analysis
@@ -19,7 +19,7 @@ A powerful Monte Carlo-based hedging simulator for farmers and exporters to opti
 - **Interactive Visualizations**: Real-time charts and risk metrics
 - **Risk Metrics**: VaR, Expected Shortfall, Sharpe Ratio, Max Drawdown
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Installation
 
@@ -37,7 +37,7 @@ python app.py
 
 Visit `http://localhost:5000` in your browser.
 
-## 📊 How It Works
+##  How It Works
 
 1. **Select Commodity**: Choose from 5 major agricultural commodities
 2. **Set Parameters**: 
@@ -48,7 +48,7 @@ Visit `http://localhost:5000` in your browser.
 3. **Run Simulation**: Monte Carlo engine generates 10,000 price scenarios
 4. **Analyze Results**: View probability distributions, risk metrics, and optimal strategies
 
-## 🧮 Technical Implementation
+##  Technical Implementation
 
 ### Monte Carlo Simulation
 - Geometric Brownian Motion (GBM) for price modeling
@@ -66,7 +66,7 @@ Visit `http://localhost:5000` in your browser.
 - **Sharpe Ratio**: Risk-adjusted return metric
 - **Maximum Drawdown**: Largest peak-to-trough decline
 
-## 📈 Use Cases
+##  Use Cases
 
 ### For Farmers
 - Hedge against falling crop prices
@@ -91,7 +91,7 @@ Visit `http://localhost:5000` in your browser.
 - **Frontend**: HTML5, CSS3, JavaScript
 - **Data**: Historical commodity prices (2010-2024)
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 commodity_futures_simulator/
@@ -109,7 +109,7 @@ commodity_futures_simulator/
 └── requirements.txt
 ```
 
-## 🎓 Skills Demonstrated
+##  Skills Demonstrated
 
 - Financial modeling and derivatives pricing
 - Monte Carlo simulation techniques
@@ -118,17 +118,17 @@ commodity_futures_simulator/
 - Full-stack web development
 - Statistical analysis and probability theory
 
-## 📝 License
+##  License
 
 MIT License - feel free to use for learning and portfolio purposes.
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions welcome! Please open an issue or submit a PR.
 
-## 📧 Contact
+##  Contact
 
-For questions or opportunities: [your.email@example.com]
+For questions or opportunities: officialimanuel01@gmail.com
 
 ---
 
