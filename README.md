@@ -20,6 +20,7 @@ A powerful Monte Carlo-based hedging simulator for farmers and exporters to opti
 - **Risk Metrics**: VaR, Expected Shortfall, Sharpe Ratio, Max Drawdown
 
 ##  Quick Start
+##Follow these steps to get the Commodity Futures Simulator running locally:
 
 ### Installation
 
