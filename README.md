@@ -26,7 +26,7 @@ A powerful Monte Carlo-based hedging simulator for farmers and exporters to opti
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/commodity-futures-simulator.git
+git clone https://github.com/EmmanuelOchieng01/commodity-futures-simulator.git
 cd commodity-futures-simulator
 
 # Install dependencies
