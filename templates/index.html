@@ -12,30 +12,36 @@
 <header>
     <div class="header-left">
         <div class="logo">Commodity<span>IQ</span></div>
-        <div class="tagline">Monte Carlo Futures Simulator · 10,000 Scenarios · 5 Commodities</div>
+        <div class="tagline">Monte Carlo Futures Simulator · Geometric Brownian Motion · 10,000 Scenarios</div>
     </div>
-    <div class="header-badge">v1.0</div>
+    <div class="header-right">
+        <div class="header-badge">v1.0</div>
+    </div>
 </header>
 
 <div class="dashboard">
 
-    <!-- LEFT PANEL -->
+    <!-- LEFT: INPUT PANEL -->
     <div class="input-panel">
         <div class="panel-title">Simulation Parameters</div>
 
         <div class="section">
             <div class="section-label">Commodity</div>
-            <select id="commodity" onchange="updateCommodityInfo()">
+            <select id="commodity" onchange="onCommodityChange()">
                 <option value="">Loading...</option>
             </select>
-            <div class="info-text" id="commodity-info"></div>
+            <div class="info-row">
+                <span class="info-item" id="info-price">—</span>
+                <span class="info-item" id="info-vol">—</span>
+                <span class="info-item" id="info-unit">—</span>
+            </div>
         </div>
 
         <div class="section">
             <div class="section-label">Position</div>
-            <label>Volume (units to hedge)</label>
+            <label>Volume — units to hedge</label>
             <input type="number" id="volume" value="10000" min="100" step="100">
-            <label>Spot Price (USD) — enter 0 for current market price</label>
+            <label>Spot Price (USD) — leave 0 to use current market price</label>
             <input type="number" id="spot_price" value="0" min="0" step="0.01">
             <label>Time Horizon (months)</label>
             <input type="number" id="time_horizon" value="6" min="1" max="24">
@@ -43,253 +49,393 @@
 
         <div class="section">
             <div class="section-label">Hedging Strategy</div>
-            <select id="strategy">
-                <option value="no_hedge">No Hedge — Full market exposure</option>
-                <option value="full_hedge" selected>Full Hedge — Lock in futures price (100%)</option>
-                <option value="partial_hedge">Partial Hedge — 50% coverage</option>
-                <option value="dynamic_hedge">Dynamic Hedge — Adaptive coverage</option>
-            </select>
-            <div class="info-text" id="strategy-info"></div>
+            <div class="strat-grid">
+                <div class="strat-pill active" data-val="no_hedge"      onclick="selectStrategy(this)">No Hedge</div>
+                <div class="strat-pill"        data-val="full_hedge"    onclick="selectStrategy(this)">Full Hedge</div>
+                <div class="strat-pill"        data-val="partial_hedge" onclick="selectStrategy(this)">Partial (50%)</div>
+                <div class="strat-pill"        data-val="dynamic_hedge" onclick="selectStrategy(this)">Dynamic</div>
+            </div>
+            <div class="strat-desc" id="strat-desc"></div>
         </div>
 
         <div class="section">
-            <div class="section-label">Monte Carlo Settings</div>
-            <label>Number of Simulations</label>
+            <div class="section-label">Monte Carlo</div>
+            <label>Simulations — higher = more accurate, slower</label>
             <input type="number" id="simulations" value="10000" min="1000" max="50000" step="1000">
         </div>
 
-        <button id="run-simulation" onclick="runSimulation()">Run Simulation</button>
-        <div id="loading" class="loading">Running 10,000 scenarios...</div>
+        <button id="btn-run"     onclick="runSimulation()">Run Simulation</button>
+        <button id="btn-compare" onclick="runComparison()" class="btn-secondary">Compare All Strategies</button>
+        <div id="loading" class="loading">Running Monte Carlo simulation...</div>
     </div>
 
-    <!-- RIGHT PANEL -->
+    <!-- RIGHT: RESULTS PANEL -->
     <div class="results-panel">
-        <div id="results-placeholder" class="placeholder">
-            <div class="placeholder-title">Configure parameters and click Run Simulation</div>
-            <div class="placeholder-sub">The Monte Carlo engine will simulate thousands of price scenarios using Geometric Brownian Motion and calculate optimal hedging outcomes.</div>
-            <div class="strategy-cards">
-                <div class="strat-card">
-                    <div class="strat-name">No Hedge</div>
-                    <div class="strat-risk high">High Risk</div>
-                    <div class="strat-desc">Full exposure to price swings. Maximum potential gain and loss.</div>
+
+        <!-- PLACEHOLDER -->
+        <div id="placeholder" class="placeholder">
+            <div class="ph-title">Configure and run a simulation</div>
+            <div class="ph-sub">The Monte Carlo engine simulates 10,000 future price paths using Geometric Brownian Motion and calculates your revenue distribution under each hedging strategy.</div>
+            <div class="strat-info-grid">
+                <div class="si-card">
+                    <div class="si-name">No Hedge</div>
+                    <div class="si-tag high">High Risk</div>
+                    <div class="si-desc">Full exposure to price movements. Revenue moves entirely with the market — maximum upside and maximum downside.</div>
                 </div>
-                <div class="strat-card">
-                    <div class="strat-name">Full Hedge</div>
-                    <div class="strat-risk low">Low Risk</div>
-                    <div class="strat-desc">Lock in the futures price for 100% of volume. Eliminates price uncertainty.</div>
+                <div class="si-card">
+                    <div class="si-name">Full Hedge</div>
+                    <div class="si-tag low">Low Risk</div>
+                    <div class="si-desc">Lock in the current futures price for 100% of volume. Revenue is fixed regardless of where prices move at expiry.</div>
                 </div>
-                <div class="strat-card">
-                    <div class="strat-name">Partial Hedge</div>
-                    <div class="strat-risk med">Medium Risk</div>
-                    <div class="strat-desc">Hedge 50% of volume. Balance between protection and upside opportunity.</div>
+                <div class="si-card">
+                    <div class="si-name">Partial Hedge</div>
+                    <div class="si-tag med">Medium Risk</div>
+                    <div class="si-desc">Hedge 50% at the futures price, leave 50% exposed. Balances downside protection with upside participation.</div>
                 </div>
-                <div class="strat-card">
-                    <div class="strat-name">Dynamic Hedge</div>
-                    <div class="strat-risk med">Medium Risk</div>
-                    <div class="strat-desc">Adaptive coverage that increases when prices fall and decreases when prices rise.</div>
+                <div class="si-card">
+                    <div class="si-name">Dynamic Hedge</div>
+                    <div class="si-tag med">Medium Risk</div>
+                    <div class="si-desc">Adaptive coverage — increases protection when prices fall and reduces it when prices rise to capture the upside.</div>
                 </div>
             </div>
         </div>
 
+        <!-- SIMULATION RESULTS -->
         <div id="results" style="display:none;">
             <div class="ref-strip" id="ref-strip"></div>
 
-            <div class="result-section-label">Key Metrics</div>
-            <div class="metrics-grid">
-                <div class="metric-card green">
-                    <div class="metric-label">Expected Revenue</div>
-                    <div class="metric-value" id="metric-mean">—</div>
+            <div class="rl">Key Metrics</div>
+            <div class="kpi-grid">
+                <div class="kpi green">
+                    <div class="kpi-label">Expected Revenue</div>
+                    <div class="kpi-val" id="m-mean">—</div>
+                    <div class="kpi-sub">Mean across all scenarios</div>
                 </div>
-                <div class="metric-card blue">
-                    <div class="metric-label">Std Deviation</div>
-                    <div class="metric-value" id="metric-std">—</div>
+                <div class="kpi blue">
+                    <div class="kpi-label">Std Deviation</div>
+                    <div class="kpi-val" id="m-std">—</div>
+                    <div class="kpi-sub">Revenue volatility</div>
                 </div>
-                <div class="metric-card orange">
-                    <div class="metric-label">Value at Risk (95%)</div>
-                    <div class="metric-value" id="metric-var">—</div>
-                    <div class="metric-sub">Worst case at 95% confidence</div>
+                <div class="kpi orange">
+                    <div class="kpi-label">Value at Risk (95%)</div>
+                    <div class="kpi-val" id="m-var">—</div>
+                    <div class="kpi-sub">Worst case · 95% confidence</div>
                 </div>
-                <div class="metric-card red">
-                    <div class="metric-label">Expected Shortfall</div>
-                    <div class="metric-value" id="metric-es">—</div>
-                    <div class="metric-sub">Average of worst 5% outcomes</div>
+                <div class="kpi red">
+                    <div class="kpi-label">Expected Shortfall</div>
+                    <div class="kpi-val" id="m-es">—</div>
+                    <div class="kpi-sub">Avg of worst 5% outcomes</div>
                 </div>
             </div>
 
-            <div class="result-section-label">Revenue Distribution</div>
-            <div class="chart-box">
-                <div id="revenue-chart" style="height:280px;"></div>
+            <div class="two-col">
+                <div>
+                    <div class="rl">Revenue Distribution</div>
+                    <div class="chart-box"><div id="chart-revenue" style="height:260px;"></div></div>
+                </div>
+                <div>
+                    <div class="rl">Price Scenarios</div>
+                    <div class="chart-box"><div id="chart-price" style="height:260px;"></div></div>
+                </div>
             </div>
 
-            <div class="result-section-label">Price Scenarios</div>
-            <div class="chart-box">
-                <div id="price-chart" style="height:280px;"></div>
-            </div>
+            <div class="rl">Full Risk Report</div>
+            <div class="risk-table" id="risk-table"></div>
 
-            <div class="result-section-label">Full Risk Report</div>
-            <div class="risk-table">
-                <div class="risk-row"><span>Best Case (Max Revenue)</span><span id="metric-max">—</span></div>
-                <div class="risk-row"><span>Worst Case (Min Revenue)</span><span id="metric-min">—</span></div>
-                <div class="risk-row"><span>Median (50th Percentile)</span><span id="metric-median">—</span></div>
-                <div class="risk-row"><span>95th Percentile</span><span id="metric-p95">—</span></div>
-                <div class="risk-row"><span>5th Percentile</span><span id="metric-p5">—</span></div>
-                <div class="risk-row"><span>Sharpe Ratio</span><span id="metric-sharpe">—</span></div>
-                <div class="risk-row"><span>Max Drawdown</span><span id="metric-dd">—</span></div>
-            </div>
+            <div class="rl" style="margin-top:2rem;">Scenario Summary</div>
+            <div class="scenario-grid" id="scenario-grid"></div>
         </div>
+
+        <!-- COMPARISON RESULTS -->
+        <div id="comparison" style="display:none;">
+            <div class="ref-strip" id="comp-ref-strip"></div>
+            <div class="rl">Strategy Comparison</div>
+            <div class="comp-table" id="comp-table"></div>
+            <div class="rl" style="margin-top:2rem;">Expected Revenue by Strategy</div>
+            <div class="chart-box"><div id="chart-compare" style="height:320px;"></div></div>
+        </div>
+
     </div>
 </div>
 
 <div class="footer">
-    CommodityIQ &nbsp;·&nbsp; Monte Carlo Simulation Engine &nbsp;·&nbsp; For educational and portfolio purposes only
+    CommodityIQ &nbsp;·&nbsp; Monte Carlo Simulation Engine &nbsp;·&nbsp; Educational purposes only &nbsp;·&nbsp; Not financial advice
 </div>
 
 <script>
-const strategyDescriptions = {
-    'no_hedge':      'Full exposure to price movements. Highest risk, highest potential reward.',
-    'full_hedge':    'Lock in the futures price for 100% of volume. Revenue is fixed regardless of market moves.',
-    'partial_hedge': 'Hedge 50% of volume at the futures price. The other 50% remains exposed to the market.',
-    'dynamic_hedge': 'Hedge ratio adjusts based on price movement — increases protection when prices fall.'
+// ── State ──────────────────────────────────────────────────
+let selectedStrategy = 'no_hedge';
+let commoditiesData  = [];
+
+const stratDesc = {
+    no_hedge:      'Full market exposure. Revenue rises and falls with commodity prices. Highest variance.',
+    full_hedge:    'Lock in the futures price for 100% of volume. Revenue is fixed. No upside, no downside from price moves.',
+    partial_hedge: 'Hedge 50% of volume at futures price. The remaining 50% is exposed to the market.',
+    dynamic_hedge: 'Hedge ratio adapts to price movements. More protection when prices fall, less when they rise.'
 };
 
-async function loadCommodities() {
-    const response = await fetch('/api/commodities');
-    const commodities = await response.json();
-    const select = document.getElementById('commodity');
-    select.innerHTML = commodities.map(c =>
-        `<option value="${c.code}">${c.name} — $${c.price.toFixed(4)} / ${c.unit} &nbsp;(Vol: ${c.volatility}%)</option>`
+const stratLabels = {
+    no_hedge:'No Hedge', full_hedge:'Full Hedge',
+    partial_hedge:'Partial Hedge (50%)', dynamic_hedge:'Dynamic Hedge'
+};
+
+// ── Init ──────────────────────────────────────────────────
+async function init() {
+    const res  = await fetch('/api/commodities');
+    commoditiesData = await res.json();
+    const sel  = document.getElementById('commodity');
+    sel.innerHTML = commoditiesData.map(c =>
+        `<option value="${c.code}">${c.name}</option>`
     ).join('');
-    updateCommodityInfo();
+    onCommodityChange();
+    selectStrategyByVal('no_hedge');
 }
 
-function updateCommodityInfo() {
-    const select = document.getElementById('commodity');
-    const opt = select.options[select.selectedIndex];
-    document.getElementById('commodity-info').textContent = opt ? opt.text.split('—')[1]?.trim() || '' : '';
-    document.getElementById('strategy-info').textContent =
-        strategyDescriptions[document.getElementById('strategy').value] || '';
+function onCommodityChange() {
+    const code = document.getElementById('commodity').value;
+    const c    = commoditiesData.find(x => x.code === code);
+    if (!c) return;
+    document.getElementById('info-price').textContent = `Price: $${c.price.toFixed(4)}`;
+    document.getElementById('info-vol').textContent   = `Volatility: ${c.volatility}%`;
+    document.getElementById('info-unit').textContent  = `Unit: ${c.unit}`;
 }
 
-document.getElementById('strategy').addEventListener('change', () => {
-    document.getElementById('strategy-info').textContent =
-        strategyDescriptions[document.getElementById('strategy').value] || '';
-});
+function selectStrategy(el) {
+    document.querySelectorAll('.strat-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    selectedStrategy = el.dataset.val;
+    document.getElementById('strat-desc').textContent = stratDesc[selectedStrategy];
+}
 
-function fmt(val) {
-    const abs = Math.abs(val);
-    const sign = val < 0 ? '-' : '';
-    if (abs >= 1000000) return sign + '$' + (abs/1000000).toFixed(2) + 'M';
-    if (abs >= 1000)    return sign + '$' + (abs/1000).toFixed(1) + 'K';
+function selectStrategyByVal(val) {
+    const el = document.querySelector(`.strat-pill[data-val="${val}"]`);
+    if (el) selectStrategy(el);
+}
+
+// ── Format helpers ────────────────────────────────────────
+function fmt(v) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    const abs  = Math.abs(v);
+    const sign = v < 0 ? '-' : '';
+    if (abs >= 1e6) return sign + '$' + (abs/1e6).toFixed(3) + 'M';
+    if (abs >= 1e3) return sign + '$' + (abs/1e3).toFixed(1) + 'K';
     return sign + '$' + abs.toFixed(2);
 }
+function fmtN(v, dec=4) { return (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toFixed(dec); }
 
+const darkLayout = {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#C8D8E8', family:'DM Mono, monospace', size:11},
+    xaxis:{gridcolor:'#141E30', color:'#5A7090', linecolor:'#1C2A40'},
+    yaxis:{gridcolor:'#141E30', color:'#5A7090', linecolor:'#1C2A40'},
+};
+
+// ── Run simulation ────────────────────────────────────────
 async function runSimulation() {
-    const btn = document.getElementById('run-simulation');
-    btn.disabled = true;
-    document.getElementById('loading').style.display = 'flex';
-    document.getElementById('results').style.display = 'none';
-    document.getElementById('results-placeholder').style.display = 'none';
+    setLoading(true);
+    hide(['placeholder','results','comparison']);
 
-    const data = {
-        commodity:   document.getElementById('commodity').value,
-        volume:      parseFloat(document.getElementById('volume').value),
-        spot_price:  parseFloat(document.getElementById('spot_price').value),
-        time_horizon:parseInt(document.getElementById('time_horizon').value),
-        strategy:    document.getElementById('strategy').value,
-        simulations: parseInt(document.getElementById('simulations').value)
+    const payload = {
+        commodity:    document.getElementById('commodity').value,
+        volume:       parseFloat(document.getElementById('volume').value),
+        spot_price:   parseFloat(document.getElementById('spot_price').value),
+        time_horizon: parseInt(document.getElementById('time_horizon').value),
+        strategy:     selectedStrategy,
+        simulations:  parseInt(document.getElementById('simulations').value),
     };
 
     try {
-        const response = await fetch('/api/simulate', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+        const res = await fetch('/api/simulate', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
         });
-        const results = await response.json();
-        if (results.error) { showToast('Error: ' + results.error, 'error'); return; }
-        displayResults(results, data);
-    } catch (err) {
-        showToast('Request failed: ' + err.message, 'error');
+        const r = await res.json();
+        if (r.error) { toast('Error: ' + r.error, 'error'); return; }
+        renderResults(r, payload);
+        show('results');
+        toast('Simulation complete.', 'success');
+    } catch(e) {
+        toast('Request failed: ' + e.message, 'error');
     } finally {
-        document.getElementById('loading').style.display = 'none';
-        btn.disabled = false;
+        setLoading(false);
     }
 }
 
-function displayResults(r, params) {
-    document.getElementById('results').style.display = 'block';
+function renderResults(r, params) {
     const m = r.metrics;
 
     // Ref strip
-    const stratLabels = {'no_hedge':'No Hedge','full_hedge':'Full Hedge','partial_hedge':'Partial Hedge','dynamic_hedge':'Dynamic Hedge'};
     document.getElementById('ref-strip').innerHTML =
         `<span>COMMODITY &nbsp;${r.commodity}</span>` +
         `<span>STRATEGY &nbsp;${stratLabels[r.strategy]}</span>` +
         `<span>HORIZON &nbsp;${r.time_horizon} months</span>` +
-        `<span>SIMULATIONS &nbsp;${r.n_simulations.toLocaleString()}</span>` +
-        `<span>SPOT &nbsp;$${r.spot_price.toFixed(4)}</span>`;
+        `<span>${r.n_simulations.toLocaleString()} simulations</span>` +
+        `<span>SPOT &nbsp;$${r.spot_price.toFixed(4)}</span>` +
+        `<span>VOLUME &nbsp;${r.volume.toLocaleString()}</span>`;
 
-    // Metrics
-    document.getElementById('metric-mean').textContent   = fmt(m.mean);
-    document.getElementById('metric-std').textContent    = fmt(m.std);
-    document.getElementById('metric-var').textContent    = fmt(m.var_95);
-    document.getElementById('metric-es').textContent     = fmt(m.es_95);
-    document.getElementById('metric-max').textContent    = fmt(m.max);
-    document.getElementById('metric-min').textContent    = fmt(m.min);
-    document.getElementById('metric-median').textContent = fmt(m.percentile_50);
-    document.getElementById('metric-p95').textContent    = fmt(m.percentile_95);
-    document.getElementById('metric-p5').textContent     = fmt(m.percentile_5);
-    document.getElementById('metric-sharpe').textContent = m.sharpe_ratio.toFixed(4);
-    document.getElementById('metric-dd').textContent     = m.max_drawdown.toFixed(2) + '%';
+    // KPIs
+    document.getElementById('m-mean').textContent = fmt(m.mean);
+    document.getElementById('m-std').textContent  = fmt(m.std);
+    document.getElementById('m-var').textContent  = fmt(m.var_95);
+    document.getElementById('m-es').textContent   = fmt(m.es_95);
 
-    const darkLayout = {
-        paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-        font:{color:'#C8D8E8', family:'DM Mono, monospace', size:11},
-        xaxis:{gridcolor:'#141E30', color:'#5A7090'},
-        yaxis:{gridcolor:'#141E30', color:'#5A7090'},
-    };
-
-    // Revenue distribution
-    Plotly.newPlot('revenue-chart', [{
-        x: r.histogram.bins.slice(0,-1).map((b,i)=>(b+r.histogram.bins[i+1])/2),
-        y: r.histogram.counts,
-        type:'bar', marker:{color:'#C9A84C', opacity:0.85},
-        name:'Frequency'
+    // Revenue chart
+    const midpoints = r.histogram.bins.slice(0,-1).map((b,i) => (b + r.histogram.bins[i+1]) / 2);
+    Plotly.newPlot('chart-revenue', [{
+        x: midpoints, y: r.histogram.counts, type:'bar',
+        marker:{color:'#C9A84C', opacity:0.85}, name:'Frequency'
     }], {
         ...darkLayout,
         xaxis:{...darkLayout.xaxis, title:'Revenue (USD)'},
         yaxis:{...darkLayout.yaxis, title:'Frequency'},
-        margin:{t:10,b:50,l:60,r:20}, showlegend:false
+        margin:{t:10,b:50,l:60,r:10}, showlegend:false
     }, {responsive:true, displayModeBar:false});
 
-    // Price distribution
-    Plotly.newPlot('price-chart', [{
-        x: r.price_distribution.bins.slice(0,-1).map((b,i)=>(b+r.price_distribution.bins[i+1])/2),
-        y: r.price_distribution.counts,
-        type:'bar', marker:{color:'#00BFA5', opacity:0.85},
-        name:'Frequency'
+    // Price chart
+    const pmid = r.price_distribution.bins.slice(0,-1).map((b,i) => (b + r.price_distribution.bins[i+1]) / 2);
+    Plotly.newPlot('chart-price', [{
+        x: pmid, y: r.price_distribution.counts, type:'bar',
+        marker:{color:'#00BFA5', opacity:0.85}, name:'Frequency'
     }], {
         ...darkLayout,
         xaxis:{...darkLayout.xaxis, title:'Final Price (USD)'},
         yaxis:{...darkLayout.yaxis, title:'Frequency'},
-        margin:{t:10,b:50,l:60,r:20}, showlegend:false
+        margin:{t:10,b:50,l:60,r:10}, showlegend:false
     }, {responsive:true, displayModeBar:false});
 
-    document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+    // Risk table
+    const rows = [
+        ['Expected Revenue (Mean)',  fmt(m.mean)],
+        ['Std Deviation',            fmt(m.std)],
+        ['Value at Risk (VaR 95%)',  fmt(m.var_95)],
+        ['Expected Shortfall',       fmt(m.es_95)],
+        ['Best Case (Maximum)',      fmt(m.max)],
+        ['Worst Case (Minimum)',     fmt(m.min)],
+        ['Median (50th Pct)',        fmt(m.percentile_50)],
+        ['95th Percentile',          fmt(m.percentile_95)],
+        ['5th Percentile',           fmt(m.percentile_5)],
+        ['25th Percentile',          fmt(m.percentile_25)],
+        ['75th Percentile',          fmt(m.percentile_75)],
+        ['Sharpe Ratio',             fmtN(m.sharpe_ratio, 4)],
+        ['Max Drawdown',             fmtN(m.max_drawdown, 2) + '%'],
+    ];
+    document.getElementById('risk-table').innerHTML = rows.map(([l,v]) =>
+        `<div class="risk-row"><span>${l}</span><span>${v}</span></div>`
+    ).join('');
+
+    // Scenario grid
+    document.getElementById('scenario-grid').innerHTML = `
+        <div class="sc-card green"><div class="sc-label">Best Case</div><div class="sc-val">${fmt(r.sample_scenarios.best_case)}</div></div>
+        <div class="sc-card yellow"><div class="sc-label">Median</div><div class="sc-val">${fmt(r.sample_scenarios.median)}</div></div>
+        <div class="sc-card red"><div class="sc-label">Worst Case</div><div class="sc-val">${fmt(r.sample_scenarios.worst_case)}</div></div>
+    `;
 }
 
-function showToast(msg, type='info') {
+// ── Run comparison ────────────────────────────────────────
+async function runComparison() {
+    setLoading(true);
+    hide(['placeholder','results','comparison']);
+
+    const payload = {
+        commodity:    document.getElementById('commodity').value,
+        volume:       parseFloat(document.getElementById('volume').value),
+        spot_price:   parseFloat(document.getElementById('spot_price').value),
+        time_horizon: parseInt(document.getElementById('time_horizon').value),
+        simulations:  5000,
+    };
+
+    try {
+        const res = await fetch('/api/compare', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const r = await res.json();
+        if (r.error) { toast('Error: ' + r.error, 'error'); return; }
+        renderComparison(r, payload);
+        show('comparison');
+        toast('Comparison complete.', 'success');
+    } catch(e) {
+        toast('Request failed: ' + e.message, 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+function renderComparison(data, params) {
+    const strats = ['no_hedge','full_hedge','partial_hedge','dynamic_hedge'];
+
+    document.getElementById('comp-ref-strip').innerHTML =
+        `<span>COMMODITY &nbsp;${params.commodity}</span>` +
+        `<span>VOLUME &nbsp;${params.volume.toLocaleString()}</span>` +
+        `<span>HORIZON &nbsp;${params.time_horizon} months</span>` +
+        `<span>5,000 simulations per strategy</span>`;
+
+    // Comparison table
+    const metrics = [
+        ['Expected Revenue',    m => fmt(m.mean)],
+        ['Std Deviation',       m => fmt(m.std)],
+        ['VaR (95%)',           m => fmt(m.var_95)],
+        ['Expected Shortfall',  m => fmt(m.es_95)],
+        ['Best Case',           m => fmt(m.max)],
+        ['Worst Case',          m => fmt(m.min)],
+        ['Sharpe Ratio',        m => fmtN(m.sharpe_ratio, 4)],
+        ['Max Drawdown',        m => fmtN(m.max_drawdown, 2) + '%'],
+    ];
+
+    const header = `<div class="ct-row ct-head">
+        <span>Metric</span>
+        ${strats.map(s => `<span>${stratLabels[s]}</span>`).join('')}
+    </div>`;
+
+    const rows = metrics.map(([label, fn]) =>
+        `<div class="ct-row">
+            <span class="ct-label">${label}</span>
+            ${strats.map(s => `<span>${fn(data[s])}</span>`).join('')}
+        </div>`
+    ).join('');
+
+    document.getElementById('comp-table').innerHTML = header + rows;
+
+    // Bar chart comparison
+    Plotly.newPlot('chart-compare',
+        strats.map((s, i) => ({
+            x: [stratLabels[s]],
+            y: [data[s].mean],
+            type: 'bar', name: stratLabels[s],
+            marker: {color: ['#C9A84C','#00BFA5','#3b82f6','#a78bfa'][i]}
+        })),
+        {
+            ...darkLayout,
+            yaxis:{...darkLayout.yaxis, title:'Expected Revenue (USD)'},
+            margin:{t:20,b:60,l:80,r:20},
+            showlegend:false, barmode:'group'
+        },
+        {responsive:true, displayModeBar:false}
+    );
+}
+
+// ── Utilities ─────────────────────────────────────────────
+function show(id) { document.getElementById(id).style.display = 'block'; }
+function hide(ids) { ids.forEach(id => { document.getElementById(id).style.display = 'none'; }); }
+function setLoading(on) {
+    document.getElementById('loading').style.display = on ? 'flex' : 'none';
+    document.getElementById('btn-run').disabled      = on;
+    document.getElementById('btn-compare').disabled  = on;
+}
+
+function toast(msg, type='info') {
     const c = {success:'#00BFA5', warn:'#C9A84C', error:'#E05252', info:'#3b82f6'};
     const t = document.createElement('div');
-    t.style.cssText = `position:fixed;bottom:2rem;right:2rem;background:#0D1220;border:1px solid ${c[type]};
-        color:#E2E8F0;padding:0.9rem 1.4rem;border-radius:8px;font-family:'DM Mono',monospace;font-size:0.78rem;
-        z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.5);max-width:320px;`;
+    t.style.cssText = `position:fixed;bottom:2rem;right:2rem;background:#0D1220;
+        border:1px solid ${c[type]};color:#E2E8F0;padding:0.9rem 1.4rem;border-radius:8px;
+        font-family:'DM Mono',monospace;font-size:0.78rem;z-index:9999;
+        box-shadow:0 8px 30px rgba(0,0,0,0.5);max-width:340px;`;
     t.textContent = msg;
     document.body.appendChild(t);
-    setTimeout(()=>t.remove(), 3500);
+    setTimeout(() => t.remove(), 3500);
 }
 
-loadCommodities();
+init();
 </script>
 </body>
 </html>
