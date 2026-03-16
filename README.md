@@ -1,136 +1,103 @@
-#  Commodity Futures Simulator
+# Commodity Futures Simulator
 
-A powerful Monte Carlo-based hedging simulator for farmers and exporters to optimize their commodity risk management strategies.
-
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
-![Flask](https://img.shields.io/badge/flask-2.0+-green.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-
-##  Features
-
-- **Real Historical Data**: Uses actual commodity prices (2010-2024)
-- **Monte Carlo Simulation**: 10,000+ scenario simulations for risk analysis
-- **Multiple Commodities**: Corn, Wheat, Soybeans, Coffee, Cotton
-- **Advanced Hedging Strategies**: 
-  - No Hedge (full exposure)
-  - Full Hedge (100% coverage)
-  - Partial Hedge (50% coverage)
-  - Dynamic Hedge (adaptive strategy)
-- **Interactive Visualizations**: Real-time charts and risk metrics
-- **Risk Metrics**: VaR, Expected Shortfall, Sharpe Ratio, Max Drawdown
-
-##  Quick Start
-##Follow these steps to get the Commodity Futures Simulator running locally:
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/EmmanuelOchieng01/commodity-futures-simulator.git
-
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
-python app.py
-```
-
-Visit `http://localhost:5000` in your browser.
-
-##  How It Works
-
-1. **Select Commodity**: Choose from 5 major agricultural commodities
-2. **Set Parameters**: 
-   - Expected production volume
-   - Current spot price
-   - Time horizon
-   - Hedging strategy
-3. **Run Simulation**: Monte Carlo engine generates 10,000 price scenarios
-4. **Analyze Results**: View probability distributions, risk metrics, and optimal strategies
-
-##  Technical Implementation
-
-### Monte Carlo Simulation
-- Geometric Brownian Motion (GBM) for price modeling
-- Volatility calculated from historical data
-- Correlation-aware multi-period simulation
-
-### Hedging Strategies
-- **Full Hedge**: Lock in futures price, eliminate price risk
-- **Partial Hedge**: 50% coverage, balance risk/reward
-- **Dynamic Hedge**: Adjusts coverage based on market conditions
-
-### Risk Metrics
-- **Value at Risk (VaR)**: 95% confidence worst-case scenario
-- **Expected Shortfall**: Average loss beyond VaR
-- **Sharpe Ratio**: Risk-adjusted return metric
-- **Maximum Drawdown**: Largest peak-to-trough decline
-
-##  Use Cases
-
-### For Farmers
-- Hedge against falling crop prices
-- Plan production based on risk tolerance
-- Compare hedging strategies before harvest
-
-### For Exporters
-- Lock in favorable exchange rates via commodity futures
-- Manage supply chain price volatility
-- Optimize procurement timing
-
-### For Portfolio Managers
-- Commodity portfolio diversification
-- Risk assessment for agricultural investments
-- Scenario analysis for market stress testing
-
-## 🛠️ Technology Stack
-
-- **Backend**: Flask (Python)
-- **Simulation**: NumPy, Pandas
-- **Visualization**: Plotly.js
-- **Frontend**: HTML5, CSS3, JavaScript
-- **Data**: Historical commodity prices (2010-2024)
-
-##  Project Structure
-
-```
-commodity_futures_simulator/
-├── app.py                 # Flask application
-├── src/
-│   ├── simulator.py       # Monte Carlo engine
-│   ├── data_loader.py     # Historical data handler
-│   └── strategies.py      # Hedging strategies
-├── data/
-│   └── commodity_prices.csv
-├── templates/
-│   └── index.html
-├── static/
-│   └── style.css
-└── requirements.txt
-```
-
-##  Skills Demonstrated
-
-- Financial modeling and derivatives pricing
-- Monte Carlo simulation techniques
-- Risk management and portfolio optimization
-- Data visualization and interactive dashboards
-- Full-stack web development
-- Statistical analysis and probability theory
-
-##  License
-
-MIT License - feel free to use for learning and portfolio purposes.
-
-##  Contributing
-
-Contributions welcome! Please open an issue or submit a PR.
-
-##  Contact
-
-For questions or opportunities: officialimanuel01@gmail.com
+A Monte Carlo simulation tool that helps farmers and exporters understand and compare hedging strategies for commodity price risk. Built with Flask, NumPy, and Plotly.
 
 ---
 
-**Note**: This is a simulation tool for educational purposes. Always consult with financial professionals for actual hedging decisions.
+## What it does
+
+You select a commodity, enter your volume and time horizon, choose a hedging strategy, and the simulator runs 10,000 price scenarios using Geometric Brownian Motion. It returns a full risk report showing expected revenue, worst-case outcomes, and how each strategy performs across all simulated scenarios.
+
+---
+
+## Hedging strategies explained
+
+**No Hedge** — Your revenue moves entirely with the market. If prices rise you gain, if they fall you lose. Highest risk, highest potential reward.
+
+**Full Hedge** — You lock in the current futures price for 100% of your volume before the harvest. Revenue is fixed regardless of what the market does. Eliminates price uncertainty.
+
+**Partial Hedge** — You hedge 50% of your volume at the futures price and leave the other 50% exposed to the market. A middle ground between protection and upside opportunity.
+
+**Dynamic Hedge** — The hedge ratio adjusts based on price movements. When prices fall the system increases coverage to protect revenue. When prices rise it reduces coverage to capture the upside.
+
+---
+
+## Risk metrics explained
+
+**Value at Risk (VaR 95%)** — The minimum revenue you can expect in the worst 5% of scenarios. If VaR is $40,000 it means there is a 5% chance your revenue falls below $40,000.
+
+**Expected Shortfall** — The average revenue across all scenarios that fall below the VaR threshold. A more conservative measure of tail risk.
+
+**Sharpe Ratio** — Risk-adjusted return. Higher is better. Compares expected return against volatility.
+
+**Max Drawdown** — The largest peak-to-trough decline across simulated scenarios.
+
+---
+
+## Commodities available
+
+Corn, Wheat, Soybeans, Coffee, Cotton — with realistic historical volatility calibrated from 2010–2024 price data.
+
+---
+
+## Launch Procedure
+
+Requirements: Python 3.8+
+
+```bash
+git clone https://github.com/EmmanuelOchieng01/Commodity_futures_simulator
+cd Commodity_futures_simulator
+pip install -r requirements.txt
+python app.py
+```
+
+Open your browser at **http://localhost:5000**
+
+---
+
+## How to use it
+
+1. Select a commodity from the dropdown — current price and volatility are shown automatically
+2. Enter the volume you want to hedge and your time horizon in months
+3. Choose a hedging strategy
+4. Set the number of simulations (10,000 is the default, higher is more accurate but slower)
+5. Click **Run Simulation**
+6. Review the revenue distribution chart, key metrics, and full risk report
+
+---
+
+## Project structure
+
+```
+├── app.py                      # Flask server and API endpoints
+├── requirements.txt
+├── src/
+│   ├── simulator.py            # Monte Carlo engine (GBM price simulation)
+│   ├── data_loader.py          # Commodity data and historical prices
+│   └── strategies.py           # Hedging strategy definitions
+├── templates/
+│   └── index.html              # Main dashboard
+└── static/
+    └── style.css               # UI styling
+```
+
+---
+
+## Tech stack
+
+**Backend** — Python, Flask, NumPy, SciPy
+
+**Frontend** — HTML, CSS, JavaScript, Plotly.js
+
+**Simulation** — Geometric Brownian Motion, Monte Carlo methods
+
+---
+
+## Author
+
+**Emmanuel Ochieng**
+GitHub: https://github.com/EmmanuelOchieng01
+
+---
+
+*For educational and portfolio purposes. Not financial advice. Always consult a professional before making hedging decisions.*
