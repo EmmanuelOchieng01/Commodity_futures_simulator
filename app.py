@@ -1,95 +1,114 @@
 """
 Flask application for Commodity Futures Simulator
-Provides REST API and web interface for hedging simulations
 """
-
 from flask import Flask, render_template, request, jsonify
 import sys
+import json
+import numpy as np
 from pathlib import Path
 
-# Add src to path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
-
 from simulator import CommoditySimulator
 from data_loader import DataLoader
-import json
 
 app = Flask(__name__)
-
-# Initialize data loader
 data_loader = DataLoader()
+
+class NumpyEncoder(json.JSONEncoder):
+    """Converts numpy types to native Python types for JSON serialization."""
+    def default(self, obj):
+        if isinstance(obj, np.integer):   return int(obj)
+        if isinstance(obj, np.floating):  return float(obj)
+        if isinstance(obj, np.ndarray):   return obj.tolist()
+        if isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)): return 0.0
+        return super().default(obj)
+
+def clean(obj):
+    """Recursively clean all numpy types and bad floats from a dict/list."""
+    if isinstance(obj, dict):
+        return {k: clean(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [clean(v) for v in obj]
+    if isinstance(obj, np.integer):  return int(obj)
+    if isinstance(obj, np.floating): return float(obj)
+    if isinstance(obj, np.ndarray):  return obj.tolist()
+    if isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)): return 0.0
+    return obj
 
 @app.route('/')
 def index():
-    """Render main application page"""
     return render_template('index.html')
 
 @app.route('/api/commodities')
 def get_commodities():
-    """Get list of available commodities with current prices"""
-    commodities = data_loader.get_commodities_info()
-    return jsonify(commodities)
+    return jsonify(data_loader.get_commodities_info())
 
 @app.route('/api/simulate', methods=['POST'])
 def simulate():
-    """
-    Run Monte Carlo simulation for hedging strategy
-
-    Expected JSON payload:
-    {
-        "commodity": "CORN",
-        "volume": 10000,
-        "spot_price": 4.50,
-        "time_horizon": 6,
-        "strategy": "full_hedge",
-        "simulations": 10000
-    }
-    """
     try:
-        data = request.json
+        data        = request.json
+        commodity   = data.get('commodity', 'CORN')
+        volume      = float(data.get('volume', 10000))
+        spot_price  = float(data.get('spot_price', 0))
+        time_horizon= int(data.get('time_horizon', 6))
+        strategy    = data.get('strategy', 'no_hedge')
+        n_sims      = int(data.get('simulations', 10000))
 
-        # Validate inputs
-        commodity = data.get('commodity', 'CORN')
-        volume = float(data.get('volume', 10000))
-        spot_price = float(data.get('spot_price', 0))
-        time_horizon = int(data.get('time_horizon', 6))
-        strategy = data.get('strategy', 'no_hedge')
-        n_simulations = int(data.get('simulations', 10000))
-
-        # Initialize simulator
-        simulator = CommoditySimulator(
-            commodity=commodity,
-            data_loader=data_loader
+        simulator = CommoditySimulator(commodity=commodity, data_loader=data_loader)
+        results   = simulator.run_simulation(
+            volume=volume, spot_price=spot_price,
+            time_horizon=time_horizon, strategy=strategy,
+            n_simulations=n_sims
         )
-
-        # Run simulation
-        results = simulator.run_simulation(
-            volume=volume,
-            spot_price=spot_price,
-            time_horizon=time_horizon,
-            strategy=strategy,
-            n_simulations=n_simulations
+        return app.response_class(
+            response=json.dumps(clean(results), cls=NumpyEncoder),
+            status=200, mimetype='application/json'
         )
-
-        return jsonify(results)
-
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 400
 
 @app.route('/api/historical/<commodity>')
 def get_historical(commodity):
-    """Get historical prices for a commodity"""
     try:
         prices = data_loader.get_historical_prices(commodity)
         return jsonify({
-            'dates': prices.index.strftime('%Y-%m-%d').tolist(),
-            'prices': prices.values.tolist()
+            'dates':  prices.index.strftime('%Y-%m-%d').tolist(),
+            'prices': [float(p) for p in prices.values]
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/api/compare', methods=['POST'])
+def compare_strategies():
+    """Run all 4 strategies and return side-by-side metrics for comparison."""
+    try:
+        data         = request.json
+        commodity    = data.get('commodity', 'CORN')
+        volume       = float(data.get('volume', 10000))
+        spot_price   = float(data.get('spot_price', 0))
+        time_horizon = int(data.get('time_horizon', 6))
+        n_sims       = int(data.get('simulations', 5000))
+
+        strategies = ['no_hedge', 'full_hedge', 'partial_hedge', 'dynamic_hedge']
+        comparison = {}
+        for s in strategies:
+            simulator = CommoditySimulator(commodity=commodity, data_loader=data_loader)
+            r = simulator.run_simulation(
+                volume=volume, spot_price=spot_price,
+                time_horizon=time_horizon, strategy=s,
+                n_simulations=n_sims
+            )
+            comparison[s] = clean(r['metrics'])
+        return app.response_class(
+            response=json.dumps(comparison, cls=NumpyEncoder),
+            status=200, mimetype='application/json'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
 if __name__ == '__main__':
-    print("🚀 Starting Commodity Futures Simulator...")
-    print("📊 Loading historical data...")
-    print("✓ Server ready at http://localhost:5000")
+    print("Starting Commodity Futures Simulator...")
+    print("Server ready at http://localhost:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)
