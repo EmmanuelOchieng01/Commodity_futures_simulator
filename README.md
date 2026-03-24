@@ -39,6 +39,15 @@ You select a commodity, enter your volume and time horizon, choose a hedging str
 Corn, Wheat, Soybeans, Coffee, Cotton — with realistic historical volatility calibrated from 2010–2024 price data.
 
 ---
+## System screenshots 
+# Home screen 
+
+<img width="715" height="835" alt="Screenshot From 2026-03-24 12-49-49" src="https://github.com/user-attachments/assets/d2accf86-3752-4501-89b4-b8ead5776eaf" />
+# Full Hedge 
+<img width="1300" height="763" alt="Screenshot From 2026-03-24 12-50-33" src="https://github.com/user-attachments/assets/c5dba650-aad9-4b46-aad5-5d9939b8d6c8" />
+# Hedges Comparison Full Hedge , Partial , Dynamic and No Hedge 
+<img width="1330" height="595" alt="Screenshot From 2026-03-24 12-50-58" src="https://github.com/user-attachments/assets/71020d81-53c0-4047-8184-be0c13405345" />
+
 
 ## Launch Procedure
 
