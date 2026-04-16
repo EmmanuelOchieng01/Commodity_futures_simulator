@@ -1,6 +1,3 @@
-"""
-Data loader for commodity historical prices and metadata
-"""
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
