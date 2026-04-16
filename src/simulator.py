@@ -1,8 +1,3 @@
-"""
-Monte Carlo simulator for commodity futures hedging
-Implements various hedging strategies and risk metrics
-"""
-
 import numpy as np
 from scipy import stats
 
