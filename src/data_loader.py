@@ -1,7 +1,6 @@
-"""
-Data loader for historical commodity prices
-Generates realistic synthetic data based on actual market characteristics
-"""
+
+**Data loader for historical commodity prices
+***Generates realistic synthetic data based on actual market characteristics
 
 import pandas as pd
 import numpy as np
