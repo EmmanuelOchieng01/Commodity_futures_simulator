@@ -1,7 +1,4 @@
-"""
-Hedging strategy implementations
-Defines different approaches to commodity risk management
-"""
+
 
 class HedgingStrategy:
     """Base class for hedging strategies"""
